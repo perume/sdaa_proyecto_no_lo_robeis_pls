@@ -19,7 +19,7 @@ class CharacterDescriptor():
     I = ([0,0,0,0,1],None,0) #LSE*, men extendido horizontal
     J = ([0,0,0,0,1],None,1) #ASL*, men extendido vertical
     K = ([0,1,0,0,0],None,1) #ASL*, ind extendido vertical (Pregunta)
-    L = ([1,1,0,0,0],None,1) #ASL, ind + pulgar extendidos vertical (Lerdo)
+    L = ([1,1,0,0,0],None,None) #ASL, ind + pulgar extendidos vertical (Lerdo)
     M = ([0,1,1,1,0],None,3) #LSE, ind + cor+ an extendidos hacia abajo
     N = ([0,1,1,0,0],None,3) #LSE, ind + cor extendidos hacia abajo 
     O = ([1,0,1,1,1],1,0) #LSE, contacto P-I, horizontal, dedos restantes extendidos (OK)
@@ -81,11 +81,18 @@ class GestureClassifier():
             if type(result) == dict:
                 if hand_info[2] == 2:
                     hand_info[2] = 0 #Ignore whether we are pointing left or right
-                result = result.get(hand_info[2])
-                if not result:
-                    return result.get[None]
-                elif type(result) == dict:
-                    result = result.get(hand_info[1])
-                    if not result:
-                        return result.get[None]
+                result_dir = result.get(hand_info[2])
+                if not result_dir:
+                    print("e1")
+                    return result.get(None)
+                elif type(result_dir) == dict:
+                    result_cont = result_dir.get(hand_info[1])
+                    if not result_cont:
+                        print("e2")
+                        return result_dir.get(None)
+                    print("e3")
+                    return result_cont
+                print("e4")
+                return result_dir
+            print("e5")
             return result

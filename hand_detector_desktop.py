@@ -13,7 +13,7 @@ mp_drawing_styles = mp.solutions.drawing_styles
 gc = ld.GestureClassifier()
 vid = cv2.VideoCapture(0)
 
-def get_fingercode(landmarks : list, threshold_thumb = 25, threshold = 50):
+def get_fingercode(landmarks : list, threshold_thumb = 15, threshold = 50):
     """Takes list of hand_landmarks and returns tuple showing which fingers are extended (joints roughly align) in the first detected hand and which dont
     Tuple order is (p,i,c,a,m), 1 if extended, 0 otherwise
     Landmarks is a results.multi_hand_landmarks list"""
@@ -152,7 +152,7 @@ while(True):
     
     if debug:
         print(str(fingercode) + " - " + str(contacts)+ " - "+ ld.directions_dict[direction])
-        print(gc((fingercode,contacts,direction)))
+        print(gc([fingercode,contacts,direction]))
 
     # Q - Quit program
     if cv2.waitKey(1) & 0xFF == ord('q'): 

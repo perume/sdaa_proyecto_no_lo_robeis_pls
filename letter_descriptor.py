@@ -1,5 +1,3 @@
-import numpy as np
-
 fingers_dict = {0:"Pulgar", 1:"Indice", 2:"Corazon",3:"Anular",4:"Menique"}
 directions_dict = {None: "", 0:"Izq", 1:"Ar", 2:"De", 3:"Ab"}
 
@@ -55,7 +53,7 @@ class GestureClassifier():
                 finger_number = self.list_to_number(value[0])
                 if finger_number in self.__classifier__:   
                     if type(self.__classifier__[finger_number]) == str:
-                        print("Found match between "+self.__classifier__[finger_number]+" and "+code)
+                        #print("Found match between "+self.__classifier__[finger_number]+" and "+code)
                         stored_value = self.__classifier__[finger_number]
                         self.__classifier__[finger_number] = {}
                         self.__classifier__[finger_number][vars(CharacterDescriptor)[stored_value][2]] = stored_value
@@ -79,15 +77,15 @@ class GestureClassifier():
     def __call__(self, hand_info):
         """Compares given hand_info to the __classifier__ dict object. Returns matched character, or None"""
         if hand_info[0] is not None:
-            try:
-                result = self.__classifier__[self.list_to_number(hand_info[0])]
-                if type(result) == str:
-                    return result
-                result = result[hand_info[2]]
-                if type(result) == str:
-                    return result
-                result = result[hand_info[1]]
-                if type(result) == str:
-                    return result
-            except KeyError:
-                return None
+            result = self.__classifier__.get(self.list_to_number(hand_info[0]))
+            if type(result) == dict:
+                if hand_info[2] == 2:
+                    hand_info[2] = 0 #Ignore whether we are pointing left or right
+                result = result.get(hand_info[2])
+                if not result:
+                    return result.get[None]
+                elif type(result) == dict:
+                    result = result.get(hand_info[1])
+                    if not result:
+                        return result.get[None]
+            return result

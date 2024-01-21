@@ -5,6 +5,8 @@ import letter_descriptor as ld
 
 debug = 1
 show_video = True
+if debug>2:
+    import timeit
 
 mp_hands = mp.solutions.hands.Hands()
 mp_hand_connections = mp.solutions.hands_connections.HAND_CONNECTIONS
@@ -145,14 +147,30 @@ while(True):
                     mp_drawing_styles.get_default_hand_connections_style())
         # Flip the image horizontally for a selfie-view display.
         cv2.imshow('MediaPipe Hands',cv2.flip(frame, 1))
-
+    if debug>2:
+        start_time = timeit.default_timer()
     fingercode = get_fingercode(results.multi_hand_landmarks)  
+    if debug>2:
+        elapsed_fingercode = timeit.default_timer() - start_time
     contacts = get_contact(results.multi_hand_landmarks)
+    if debug>2:
+        elapsed_contacts = timeit.default_timer() - elapsed_fingercode - start_time
     direction = get_direction(results.multi_hand_landmarks)
+    if debug>2:
+        elapsed_direction = timeit.default_timer() - elapsed_contacts - elapsed_fingercode - start_time
+
+    detected_letter = gc([fingercode,contacts,direction])
+    if debug>2:
+        elapsed_detection = timeit.default_timer() -elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
     
     if debug:
         print(str(fingercode) + " - " + str(contacts)+ " - "+ ld.directions_dict[direction])
-        print(gc([fingercode,contacts,direction]))
+        print(detected_letter)
+    if debug>2:
+        print("Fingercode: "+str(elapsed_fingercode))
+        print("Contacts: "+str(elapsed_contacts))
+        print("Direction: "+str(elapsed_direction))
+        print("Classifying: "+str(elapsed_detection))
 
     # Q - Quit program
     if cv2.waitKey(1) & 0xFF == ord('q'): 

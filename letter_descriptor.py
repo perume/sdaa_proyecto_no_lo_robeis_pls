@@ -22,7 +22,7 @@ class CharacterDescriptor():
     L = ([1,1,0,0,0],None,None) #ASL, ind + pulgar extendidos vertical (Lerdo)
     M = ([0,1,1,1,0],None,3) #LSE, ind + cor+ an extendidos hacia abajo
     N = ([0,1,1,0,0],None,3) #LSE, ind + cor extendidos hacia abajo 
-    O = ([1,0,1,1,1],1,0) #LSE, contacto P-I, horizontal, dedos restantes extendidos (OK)
+    O = ([0,0,1,1,1],1,0) #LSE, contacto P-I, horizontal, dedos restantes extendidos (OK)
     P = ([1,1,1,1,0],None,None) #LSE*, men recogido (Baphomet)
     Q = ([0,1,0,0,1],None,None) #LSE, men + ind extendidos (Cuernos)
     R = ([1,1,0,1,1],None,None) #LSE, cor recogido (MiddleFingern't)

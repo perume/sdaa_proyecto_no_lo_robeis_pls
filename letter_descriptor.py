@@ -77,22 +77,23 @@ class GestureClassifier():
     def __call__(self, hand_info):
         """Compares given hand_info to the __classifier__ dict object. Returns matched character, or None"""
         if hand_info[0] is not None:
-            result = self.__classifier__.get(self.list_to_number(hand_info[0]))
-            if type(result) == dict:
-                if hand_info[2] == 2:
-                    hand_info[2] = 0 #Ignore whether we are pointing left or right
-                result_dir = result.get(hand_info[2])
-                if not result_dir:
-                    print("e1")
-                    return result.get(None)
-                elif type(result_dir) == dict:
-                    result_cont = result_dir.get(hand_info[1])
-                    if not result_cont:
-                        print("e2")
-                        return result_dir.get(None)
-                    print("e3")
-                    return result_cont
-                print("e4")
-                return result_dir
-            print("e5")
-            return result
+            hand_info[0] = self.list_to_number(hand_info[0])
+            hand_info.append(hand_info.pop(1)) # Reorder list to match the __classifier__ dict
+            if hand_info[1] == 2:
+                hand_info[1] = 0 # Right or left are indifferent
+            i = 0
+            result = self.__classifier__
+            while True:
+                result_aux = result.get(hand_info[i])
+                if type(result_aux) == str:
+                    break
+                elif type(result_aux) == dict:
+                    i += 1
+                else:
+                    result_aux = result.get(None)
+                    if type(result_aux) == dict:
+                        i += 1
+                    else:
+                        break
+                result = result_aux
+            return result_aux

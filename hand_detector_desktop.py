@@ -2,6 +2,9 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import letter_descriptor as ld
+pi = True
+if pi:
+    from picamera2 import Picamera2
 
 debug = 1
 show_video = True
@@ -13,7 +16,11 @@ mp_hand_connections = mp.solutions.hands_connections.HAND_CONNECTIONS
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 gc = ld.GestureClassifier()
-vid = cv2.VideoCapture(0)
+if pi:
+    picam2 = Picamera2()
+    picam2.start()
+else:
+    vid = cv2.VideoCapture(0)
 
 def get_fingercode(landmarks : list, threshold_thumb = 15, threshold = 50):
     """Takes list of hand_landmarks and returns tuple showing which fingers are extended (joints roughly align) in the first detected hand and which dont
@@ -129,9 +136,12 @@ def get_direction(landmarks : list, half_sector_threshold = 30):
 while(True): 
       
     # Capture the video frame 
-    # by frame 
-    ret, frame = vid.read() 
-    
+    # by frame
+    if pi:
+        frame = picam2.capture_array()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGB)
+    else:
+        ret, frame = vid.read() 
     frame.flags.writeable = False
     results = mp_hands.process(frame)
     
@@ -177,6 +187,7 @@ while(True):
         break
   
 # After the loop release the cap object 
-vid.release() 
+if not pi:
+    vid.release() 
 # Destroy all the windows 
 cv2.destroyAllWindows() 

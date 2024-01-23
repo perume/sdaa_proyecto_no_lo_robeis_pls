@@ -5,6 +5,9 @@ import letter_descriptor as ld
 pi = True
 if pi:
     from picamera2 import Picamera2
+    from sense_hat import SenseHat
+    from collections import deque
+    from time import clock_gettime as gt, CLOCK_REALTIME as rt_clock
 
 debug = 1
 show_video = True
@@ -16,11 +19,70 @@ mp_hand_connections = mp.solutions.hands_connections.HAND_CONNECTIONS
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 gc = ld.GestureClassifier()
-if pi:
-    picam2 = Picamera2()
-    picam2.start()
-else:
-    vid = cv2.VideoCapture(0)
+
+class LEDFSM():
+    state_dict = {0 : "Idle", 1 : "Recording", 2:"Recorded", 3:"Displaying"}
+    color_dict = {0:(255,0,0), 1:(0,0,255), 2:(0,255,0), 3:(255,255,0)}
+    saved_detections = 10
+    time_until_selected = 2
+    time_until_confirmed = 0.5
+    
+    def __init__(self) -> None:
+        self.sense = SenseHat()
+        self.state = 0
+        self.detections = deque(maxlen=self.saved_detections)
+        self.detection_time = None
+        self.result_string = ""
+    
+    def set_led(self, id):
+        """Sets the LED value to:
+        0 - Red
+        1 - Blue
+        3 - Green
+        4 - Yellow"""
+        self.sense.set_pixel(x=7, y=7, pixel=self.color_dict[id])
+        
+    def update_queue(self, value):
+        """Adds value to queue
+        Returns whether queue is full and all elements match """
+        self.detections.appendleft(value)
+        return self.detections.count(value) == self.saved_detections
+
+    def update(self,detected_code):
+        """Updates FSM with latest code"""
+        match self.state:
+            case 0: #Idle; red led
+                if self.update_queue(detected_code):
+                    self.state=1
+                    self.set_led(self.state)
+                    self.detection_time = gt(rt_clock)
+            case 1: #Gesture detected; blue led
+                    #If gesture stops matching goes to case 0
+                    #If gesture matches for time_until_selected seconds, goes to case 2
+                queue_matches = self.update_queue(detected_code)
+                if not queue_matches:
+                    self.state=0
+                    self.set_led(self.state)
+                elif queue_matches and gt(rt_clock)-self.detection_time > self.time_until_selected:
+                    if detected_code == "Open_Palm":
+                        self.state=3
+                    else:
+                        self.state=2
+                        self.result_string += detected_code
+                    self.set_led(self.state)
+                    self.detection_time = gt(rt_clock)
+                
+            case 2: #Gesture confirmed. Shows green led for time_until_confirmed seconds
+                if gt(rt_clock)-self.detection_time > self.time_until_confirmed:
+                    self.state=0
+                    self.set_led(self.state)
+            case 3: #Word confirmed. Show onscreen and return to Idle
+                self.sense.show_message(self.result_string)
+                self.result_string = ""
+                self.detections.clear()
+                self.state=0
+                self.set_led(self.state)
+                
 
 def get_fingercode(landmarks : list, threshold_thumb = 15, threshold = 50):
     """Takes list of hand_landmarks and returns tuple showing which fingers are extended (joints roughly align) in the first detected hand and which dont
@@ -133,6 +195,14 @@ def get_direction(landmarks : list, half_sector_threshold = 30):
                 return 1
     return None
     
+if pi:
+    picam2 = Picamera2()
+    picam2.start()
+    fsm = LEDFSM()
+else:
+    vid = cv2.VideoCapture(0)
+    
+
 while(True): 
       
     # Capture the video frame 
@@ -172,6 +242,8 @@ while(True):
     detected_letter = gc([fingercode,contacts,direction])
     if debug>2:
         elapsed_detection = timeit.default_timer() -elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
+    if pi:
+        fsm.update(detected_letter)
     
     if debug:
         print(str(fingercode) + " - " + str(contacts)+ " - "+ ld.directions_dict[direction])

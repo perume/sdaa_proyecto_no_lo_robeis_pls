@@ -9,8 +9,8 @@ if pi:
     from collections import deque
     from time import clock_gettime as gt, CLOCK_REALTIME as rt_clock
 
-debug = 0
-show_video = False
+debug = 1
+show_video = True
 if debug>2:
     import timeit
 
@@ -22,7 +22,8 @@ gc = ld.GestureClassifier()
 
 class LEDFSM():
     state_dict = {0 : "Idle", 1 : "Recording", 2:"Recorded", 3:"Displaying"}
-    color_dict = {0:(255,0,0), 1:(0,0,255), 2:(0,255,0), 3:(255,255,0)}
+    color_dict = {0:(255,0,0), 1:(0,0,255), 2:(0,255,0), 3:(255,255,0), 4:(0,0,0)}
+    color_dict_halved = {0:(180,0,70), 1:(70,0,180), 2:(20,120,20), 3:(120,120,40), 4:(0,0,0)}
     saved_detections = 10
     time_until_selected = 2.5
     time_until_confirmed = 1
@@ -33,14 +34,18 @@ class LEDFSM():
         self.detections = deque(maxlen=self.saved_detections)
         self.detection_time = None
         self.result_string = ""
+        self.no_detection = False
     
-    def set_led(self, id):
+    def set_led(self, id, halved = False):
         """Sets the LED value to:
         0 - Red
         1 - Blue
         3 - Green
         4 - Yellow"""
-        self.sense.set_pixel(0, 0, self.color_dict[id])
+        if halved:
+            self.sense.set_pixel(0, 0, self.color_dict_halved[id])
+        else:
+            self.sense.set_pixel(0, 0, self.color_dict[id])
         
     def update_queue(self, value):
         """Adds value to queue
@@ -50,19 +55,26 @@ class LEDFSM():
 
     def update(self,detected_code):
         """Updates FSM with latest code"""
+        if detected_code is None:
+            self.set_led(self.state, halved=True)
+        else:
+            self.set_led(self.state)
+            
         match self.state:
             case 0: #Idle; red led
                 if self.update_queue(detected_code):
                     self.state=1
-                    self.set_led(self.state)
                     self.detection_time = gt(rt_clock)
-            case 1: #Gesture detected; blue led
-                    #If gesture stops matching goes to case 0
-                    #If gesture matches for time_until_selected seconds, goes to case 2
+                    if detected_code is not None and len(detected_code) == 1:
+                        self.sense.show_letter(detected_code, [128, 0, 0])
+            case 1: 
+                #Gesture detected; blue led
+                #If gesture stops matching goes to case 0
+                #If gesture matches for time_until_selected seconds, goes to case 2
                 queue_matches = self.update_queue(detected_code)
                 if not queue_matches:
                     self.state=0
-                    self.set_led(self.state)
+                    self.sense.clear()
                 elif queue_matches and gt(rt_clock)-self.detection_time > self.time_until_selected:
                     if detected_code == "Open_Palm":
                         self.state=3
@@ -72,27 +84,26 @@ class LEDFSM():
                         self.state=2
                         self.result_string += detected_code
                         self.sense.show_letter(detected_code)
-                    self.set_led(self.state)
                     self.detection_time = gt(rt_clock)
-                
+            
             case 2: #Gesture confirmed. Shows green led for time_until_confirmed seconds
                 if gt(rt_clock)-self.detection_time > self.time_until_confirmed:
                     self.state=0
-                    self.set_led(self.state)
+                    self.sense.clear()
             case 3: #Word confirmed. Show onscreen and return to Idle
                 self.sense.show_message(self.result_string)
                 self.result_string = ""
                 self.detections.clear()
                 self.state=0
-                self.set_led(self.state)
                 
             case 4: #???
-                self.sense.show_message(":( :( :(", 0.3, [255,0,0])
+                self.sense.show_message(":(", 0.3, [255,0,0])
                 self.result_string = ""
                 self.detections.clear()
                 self.state=0
-                self.set_led(self.state)
-                
+
+        if debug:
+            print(self.detections)
 
 def get_fingercode(landmarks : list, threshold_thumb = 15, threshold = 50):
     """Takes list of hand_landmarks and returns tuple showing which fingers are extended (joints roughly align) in the first detected hand and which dont

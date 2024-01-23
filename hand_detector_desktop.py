@@ -9,8 +9,8 @@ if pi:
     from collections import deque
     from time import clock_gettime as gt, CLOCK_REALTIME as rt_clock
 
-debug = 1
-show_video = True
+debug = 0
+show_video = False
 if debug>2:
     import timeit
 
@@ -24,8 +24,8 @@ class LEDFSM():
     state_dict = {0 : "Idle", 1 : "Recording", 2:"Recorded", 3:"Displaying"}
     color_dict = {0:(255,0,0), 1:(0,0,255), 2:(0,255,0), 3:(255,255,0)}
     saved_detections = 10
-    time_until_selected = 2
-    time_until_confirmed = 0.5
+    time_until_selected = 2.5
+    time_until_confirmed = 1
     
     def __init__(self) -> None:
         self.sense = SenseHat()
@@ -40,13 +40,13 @@ class LEDFSM():
         1 - Blue
         3 - Green
         4 - Yellow"""
-        self.sense.set_pixel(x=7, y=7, pixel=self.color_dict[id])
+        self.sense.set_pixel(0, 0, self.color_dict[id])
         
     def update_queue(self, value):
         """Adds value to queue
         Returns whether queue is full and all elements match """
         self.detections.appendleft(value)
-        return self.detections.count(value) == self.saved_detections
+        return value is not None and self.detections.count(value) == self.saved_detections
 
     def update(self,detected_code):
         """Updates FSM with latest code"""
@@ -66,9 +66,12 @@ class LEDFSM():
                 elif queue_matches and gt(rt_clock)-self.detection_time > self.time_until_selected:
                     if detected_code == "Open_Palm":
                         self.state=3
+                    elif detected_code == "Middle_Finger":
+                        self.state=4
                     else:
                         self.state=2
                         self.result_string += detected_code
+                        self.sense.show_letter(detected_code)
                     self.set_led(self.state)
                     self.detection_time = gt(rt_clock)
                 
@@ -78,6 +81,13 @@ class LEDFSM():
                     self.set_led(self.state)
             case 3: #Word confirmed. Show onscreen and return to Idle
                 self.sense.show_message(self.result_string)
+                self.result_string = ""
+                self.detections.clear()
+                self.state=0
+                self.set_led(self.state)
+                
+            case 4: #???
+                self.sense.show_message(":( :( :(", 0.3, [255,0,0])
                 self.result_string = ""
                 self.detections.clear()
                 self.state=0

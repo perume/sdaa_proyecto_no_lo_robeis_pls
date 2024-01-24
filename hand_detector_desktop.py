@@ -4,16 +4,18 @@ import numpy as np
 import letter_descriptor as ld
 pi = True
 if pi:
+    #Full functionality is only enabled in the pi
     from picamera2 import Picamera2
     from sense_hat import SenseHat
     from collections import deque
     from time import clock_gettime as gt, CLOCK_REALTIME as rt_clock
 
-debug = 1
-show_video = True
+debug = 1 #Outputs debug info the higher the value up to 3
+show_video = True #Enables opencv video window
 if debug>2:
     import timeit
 
+#Instance hand-detection-related objects and variables
 mp_hands = mp.solutions.hands.Hands()
 mp_hand_connections = mp.solutions.hands_connections.HAND_CONNECTIONS
 mp_drawing = mp.solutions.drawing_utils
@@ -21,6 +23,7 @@ mp_drawing_styles = mp.solutions.drawing_styles
 gc = ld.GestureClassifier()
 
 class LEDFSM():
+    """Implements state machine that updates the LED matrix and manages/shows the messages input via gestures"""
     state_dict = {0 : "Idle", 1 : "Recording", 2:"Recorded", 3:"Displaying"}
     color_dict = {0:(255,0,0), 1:(0,0,255), 2:(0,255,0), 3:(255,255,0), 4:(0,0,0)}
     color_dict_halved = {0:(180,0,70), 1:(70,0,180), 2:(20,120,20), 3:(120,120,40), 4:(0,0,0)}
@@ -56,16 +59,16 @@ class LEDFSM():
     def update(self,detected_code):
         """Updates FSM with latest code"""
         if detected_code is None:
-            self.set_led(self.state, halved=True)
+            self.set_led(self.state, halved=True) #LED will be off-color if no hand/gesture is detected
         else:
             self.set_led(self.state)
             
-        match self.state:
+        match self.state: #Note: Raspbian comes w/ python 3.11 which supports match-case statements
             case 0: #Idle; red led
-                if self.update_queue(detected_code):
+                if self.update_queue(detected_code): #If queue is full of matching, non-None elements
                     self.state=1
                     self.detection_time = gt(rt_clock)
-                    if detected_code is not None and len(detected_code) == 1:
+                    if len(detected_code) == 1:
                         self.sense.show_letter(detected_code, [128, 0, 0])
             case 1: 
                 #Gesture detected; blue led
@@ -75,12 +78,12 @@ class LEDFSM():
                 if not queue_matches:
                     self.state=0
                     self.sense.clear()
-                elif queue_matches and gt(rt_clock)-self.detection_time > self.time_until_selected:
-                    if detected_code == "Open_Palm":
+                elif queue_matches and gt(rt_clock)-self.detection_time > self.time_until_selected: #If gesture detected does not change for time_until_selected seconds, store it
+                    if detected_code == "Open_Palm": #Open Palm confirms message
                         self.state=3
-                    elif detected_code == "Middle_Finger":
+                    elif detected_code == "Middle_Finger": #???
                         self.state=4
-                    else:
+                    else: #Otherwise store letter and iterate
                         self.state=2
                         self.result_string += detected_code
                         self.sense.show_letter(detected_code)
@@ -171,12 +174,13 @@ def get_contact(landmarks : list, threshold = 0.1):
                 return None
             
 def get_angle(landmarks : list):
-    """Estimates hand angle by measuring the angle between the wrist coordinates and the middle finger's coordinates
+    """Estimates hand angle by measuring the angle between the wrist coordinates and the middle finger's root coordinates
     Returns:
     ~ 0º Facing left
     ~ 90º Facing down
     ~ -90º Facing up
     ~ |180º| Facing right
+    Issue: May be improved by averaging middle and ring fingers' coordinates
     """
     if landmarks is not None:
         for detected_hand in landmarks:
@@ -232,7 +236,9 @@ while(True):
         frame = picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGB)
     else:
-        ret, frame = vid.read() 
+        ret, frame = vid.read()
+        
+    #Make frame non-writable to speed up passing process
     frame.flags.writeable = False
     results = mp_hands.process(frame)
     
@@ -260,11 +266,11 @@ while(True):
     if debug>2:
         elapsed_direction = timeit.default_timer() - elapsed_contacts - elapsed_fingercode - start_time
 
-    detected_letter = gc([fingercode,contacts,direction])
+    detected_letter = gc([fingercode,contacts,direction]) #Get letter by calling the GestureClassifier
     if debug>2:
         elapsed_detection = timeit.default_timer() -elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
     if pi:
-        fsm.update(detected_letter)
+        fsm.update(detected_letter) #Update FSM with latest detection
     
     if debug:
         print(str(fingercode) + " - " + str(contacts)+ " - "+ ld.directions_dict[direction])

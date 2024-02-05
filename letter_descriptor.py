@@ -8,9 +8,9 @@ class CharacterDescriptor():
     Direction - Int from 0 to 4, specifies whether the palm faces Up or Down, Left or Right. Left & Right are treated the same.
     If None, that descriptor is irrelevant for this Character's detection"""
     
-    A = ([1,0,0,0,0],None,0) #LSE, puño horizontal con el pulgar extendido
-    B = ([1,1,1,1,1],None,0) #LSE, palma horizontal
-    C = (None,None,None)
+    A = ([1,0,0,0,0],None,1) #LSE, puño vertical con el pulgar extendido
+    B = ([1,0,0,0,0],None,0) #LSE, palma horizontal
+    C = ([0,1,1,1,1],None,1) #EXPERIMENTAL
     D = ([1,1,0,1,1],2,None) #LSE, Contacto P-C, dedos restantes extendidos
     E = ([0,0,0,0,0],4,1) #ASL, puño cerrado vertical, Contacto P-M
     F = ([1,0,1,1,1],1,1) #ASL, contacto P-I, vertical, dedos restantes extendidos
@@ -24,14 +24,14 @@ class CharacterDescriptor():
     N = ([0,1,1,0,0],None,3) #LSE, ind + cor extendidos hacia abajo 
     O = ([0,0,1,1,1],1,0) #LSE, contacto P-I, horizontal, dedos restantes extendidos (OK)
     P = ([1,1,1,1,0],None,None) #LSE*, men recogido (Baphomet)
-    Q = ([0,1,0,0,1],None,None) #LSE, men + ind extendidos (Cuernos)
+    Q = ([1,1,1,1,1],1,1) #LSE, Italianni                                                   EXPERIMENTAL          
     R = ([1,1,0,1,1],None,None) #LSE, cor recogido (MiddleFingern't)
     S = ([1,1,0,0,0],1,None) #LSE*/ASL*, contacto P-I, resto recogidos
-    T = (None,None,None)
+    T = ([0,1,0,0,1],None,None) #LSE, men + ind extendidos (Cuernos)                        EXPERIMENTAL
     U = ([1,1,1,0,0],None,1) #ASL*, cor + ind + pul extendidos vertical
     V = ([0,1,1,0,0],None,1) #LSE/ASL, ind + cor extendidos hacia arriba (Victoria)
     W = ([0,1,1,1,0],None,1) #ASL, ind + cor + an extendidos hacia arriba
-    X = (None,None,None)
+    X = ([0,0,0,0,0],1,0) #LSE, ind semi-extendido horizontal(Apuntar)                      EXPERIMENTAL
     Y = ([1,0,0,0,1],None,None) #ASL, pul + men extendidos (RocknRoll)
     Z = ([1,1,0,0,1],None,None) #LSE*/ASL*, pul + ind + men extendidos (Spiderman) 
     Middle_Finger = ([0,0,1,0,0],None,1)

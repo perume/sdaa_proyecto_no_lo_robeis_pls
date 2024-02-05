@@ -10,7 +10,7 @@ if pi:
     from collections import deque
     from time import clock_gettime as gt, CLOCK_REALTIME as rt_clock
 
-debug = 1 #Outputs debug info the higher the value up to 3
+debug = 0 #Outputs debug info the higher the value up to 3
 show_video = True #Enables opencv video window
 if debug>2:
     import timeit
@@ -33,6 +33,8 @@ class LEDFSM():
     
     def __init__(self) -> None:
         self.sense = SenseHat()
+        self.sense.clear((0,0,0))#experimental
+        self.sense.set_rotation(270)#experimental
         self.state = 0
         self.detections = deque(maxlen=self.saved_detections)
         self.detection_time = None
@@ -219,30 +221,7 @@ def get_direction(landmarks : list, half_sector_threshold = 30):
             else:
                 return 1
     return None
-
-def get_thumb_palm_contact(landmarks : list, threshold = 20):
-    """Returns whether thumb is in contact with the palm or not, by measuring the angle w/ the index's first joint
-    Returns:
-    True if under threshold
-    False otherwise"""
-    if landmarks is not None:
-        for detected_hand in landmarks:
-            thumb_base = np.array([detected_hand.landmark[1].x,detected_hand.landmark[1].y,detected_hand.landmark[1].z]) #Joint 1
-            thumb_mid = np.array([detected_hand.landmark[3].x,detected_hand.landmark[3].y,detected_hand.landmark[3].z]) #Joint 3
-            index_base = np.array([detected_hand.landmark[5].x,detected_hand.landmark[5].y,detected_hand.landmark[5].z]) #Joint 5
-            
-            thumb_vector = (thumb_mid - thumb_base) / np.linalg.norm(thumb_mid - thumb_base)
-            palm_vector = (index_base - thumb_base) / np.linalg.norm(index_base - thumb_base)
-            
-            angle = np.rad2deg(np.arccos(np.clip(np.dot(thumb_vector, palm_vector), -1.0, 1.0)))
-            if debug>1:
-                print(f"Thumb-palm angle: {angle}")
-            if angle > threshold:
-                return False
-            else:
-                return True
     
-   
 if pi:
     picam2 = Picamera2()
     picam2.start()
@@ -288,12 +267,10 @@ while(True):
     direction = get_direction(results.multi_hand_landmarks)
     if debug>2:
         elapsed_direction = timeit.default_timer() - elapsed_contacts - elapsed_fingercode - start_time
-    tp_contact = get_thumb_palm_contact(results.multi_hand_landmarks)
-    if debug>2:
-        elapsed_thumb_palm = timeit.default_timer() - elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
+
     detected_letter = gc([fingercode,contacts,direction]) #Get letter by calling the GestureClassifier
     if debug>2:
-        elapsed_detection = timeit.default_timer()- elapsed_thumb_palm - elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
+        elapsed_detection = timeit.default_timer() -elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
     if pi:
         fsm.update(detected_letter) #Update FSM with latest detection
     

@@ -33,10 +33,10 @@ class LEDFSM():
     
     def __init__(self) -> None:
         self.sense = SenseHat()
-        self.sense.clear((0,0,0))#experimental
-        self.sense.set_rotation(270)#experimental
+        self.sense.clear((0,0,0)) #Clear LED matrix after startup
+        self.sense.set_rotation(270) #Show messages 
         self.state = 0
-        self.detections = deque(maxlen=self.saved_detections)
+        self.detections = deque(maxlen=self.saved_detections) #Deque speeds up I/O from both sides compared to lists
         self.detection_time = None
         self.result_string = ""
         self.no_detection = False
@@ -242,8 +242,11 @@ while(True):
         
     #Make frame non-writable to speed up passing process
     frame.flags.writeable = False
+    if debug>2:
+        start_time_detection = timeit.default_timer()
     results = mp_hands.process(frame)
-    
+    if debug>2:
+        elapsed_detection = timeit.default_timer - start_time_detection
     if show_video:
         frame.flags.writeable = True
         if results.multi_hand_landmarks:
@@ -270,7 +273,7 @@ while(True):
 
     detected_letter = gc([fingercode,contacts,direction]) #Get letter by calling the GestureClassifier
     if debug>2:
-        elapsed_detection = timeit.default_timer() -elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
+        elapsed_classification = timeit.default_timer() -elapsed_direction - elapsed_contacts - elapsed_fingercode - start_time
     if pi:
         fsm.update(detected_letter) #Update FSM with latest detection
     
@@ -278,10 +281,11 @@ while(True):
         print(str(fingercode) + " - " + str(contacts)+ " - "+ ld.directions_dict[direction])
         print(detected_letter)
     if debug>2:
+        print("Detection: "+str(elapsed_detection))
         print("Fingercode: "+str(elapsed_fingercode))
         print("Contacts: "+str(elapsed_contacts))
         print("Direction: "+str(elapsed_direction))
-        print("Classifying: "+str(elapsed_detection))
+        print("Classifying: "+str(elapsed_classification))
 
     # Q - Quit program
     if cv2.waitKey(1) & 0xFF == ord('q'): 

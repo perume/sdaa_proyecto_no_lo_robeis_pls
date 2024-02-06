@@ -27,7 +27,7 @@ class LEDFSM():
     state_dict = {0 : "Idle", 1 : "Recording", 2:"Recorded", 3:"Displaying"}
     color_dict = {0:(255,0,0), 1:(0,0,255), 2:(0,255,0), 3:(255,255,0), 4:(0,0,0)}
     color_dict_halved = {0:(180,0,70), 1:(70,0,180), 2:(20,120,20), 3:(120,120,40), 4:(0,0,0)}
-    saved_detections = 10
+    saved_detections = 7
     time_until_selected = 2.5
     time_until_confirmed = 1
     

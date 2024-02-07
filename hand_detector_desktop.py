@@ -176,7 +176,7 @@ def get_contact(landmarks : list, threshold = 0.1):
                 return None
             
 def get_angle(landmarks : list):
-    """Estimates hand angle by measuring the angle between the wrist coordinates and the middle finger's root coordinates
+    """Estimates hand angle by measuring the angle of vector between the wrist coordinates and the middle finger's root coordinates
     Returns:
     ~ 0º Facing left
     ~ 90º Facing down
